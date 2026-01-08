@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: <DOCKER_REPO>/frontend:${GITHUB_SHA}
+          image: mshashu/k8s-ci-cd-demo/frontend:${GITHUB_SHA}
           ports:
             - containerPort: 5173
 
