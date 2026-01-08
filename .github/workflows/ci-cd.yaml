@@ -3,49 +3,59 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - main   # Runs whenever you push to main branch
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Checkout code
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Buildx
+      # Step 2: Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # Step 3: Login to DockerHub
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # Step 4: Build & Push Backend
       - name: Build & Push Backend
         run: |
           docker build -t ${{ secrets.DOCKER_REPO }}/backend:${{ github.sha }} ./backend
           docker push ${{ secrets.DOCKER_REPO }}/backend:${{ github.sha }}
 
+      # Step 5: Build & Push Frontend
       - name: Build & Push Frontend
         run: |
           docker build -t ${{ secrets.DOCKER_REPO }}/frontend:${{ github.sha }} ./frontend
           docker push ${{ secrets.DOCKER_REPO }}/frontend:${{ github.sha }}
 
+      # Step 6: Set up kubectl
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.29.0'
 
+      # Step 7: Configure kubeconfig from secret
       - name: Configure Kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
 
-      - name: Replace image tag in manifests
+      # Step 8: Replace repo name in manifests
+      - name: Replace image repo in manifests
         run: |
           sed -i "s|<DOCKER_REPO>|${{ secrets.DOCKER_REPO }}|g" k8s/backend-deployment.yaml
           sed -i "s|<DOCKER_REPO>|${{ secrets.DOCKER_REPO }}|g" k8s/frontend-deployment.yaml
 
+      # Step 9: Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/backend-deployment.yaml
@@ -53,8 +63,8 @@ jobs:
           kubectl apply -f k8s/frontend-deployment.yaml
           kubectl apply -f k8s/frontend-service.yaml
 
+      # Step 10: Wait for rollout
       - name: Wait for rollout
         run: |
           kubectl rollout status deployment/backend --timeout=120s
           kubectl rollout status deployment/frontend --timeout=120s
-
