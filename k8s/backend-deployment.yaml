@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: <DOCKER_REPO>/backend:${GITHUB_SHA}
+          image: mshashu/k8s-ci-cd-demo/backend:${GITHUB_SHA}
           ports:
             - containerPort: 5050
           env:
