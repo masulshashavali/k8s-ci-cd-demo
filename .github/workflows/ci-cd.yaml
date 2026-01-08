@@ -1,53 +1,60 @@
-steps:
-  - name: Checkout
-    uses: actions/checkout@v3
+name: CI/CD Pipeline
 
-  - name: Set up Buildx
-    uses: docker/setup-buildx-action@v2
+on:
+  push:
+    branches:
+      - main
 
-  - name: Login to DockerHub
-    uses: docker/login-action@v2
-    with:
-      username: ${{ env.DOCKER_USERNAME }}
-      password: ${{ secrets.DOCKER_PASSWORD }}
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  - name: Build & Push Backend
-    uses: docker/build-push-action@v4
-    with:
-      context: ./backend
-      push: true
-      tags: ${{ env.DOCKER_REPO }}/backend:${{ github.sha }}
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v2
 
-  - name: Build & Push Frontend
-    uses: docker/build-push-action@v4
-    with:
-      context: ./frontend
-      push: true
-      tags: ${{ env.DOCKER_REPO }}/frontend:${{ github.sha }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-  - name: Set up kubectl
-    uses: azure/setup-kubectl@v3
-    with:
-      version: 'v1.29.0'
+      - name: Build & Push Backend
+        run: |
+          docker build -t ${{ secrets.DOCKER_REPO }}/backend:${{ github.sha }} ./backend
+          docker push ${{ secrets.DOCKER_REPO }}/backend:${{ github.sha }}
 
-  - name: Configure Kubeconfig
-    run: |
-      mkdir -p $HOME/.kube
-      echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+      - name: Build & Push Frontend
+        run: |
+          docker build -t ${{ secrets.DOCKER_REPO }}/frontend:${{ github.sha }} ./frontend
+          docker push ${{ secrets.DOCKER_REPO }}/frontend:${{ github.sha }}
 
-  - name: Replace image tag in manifests
-    run: |
-      sed -i "s|<DOCKER_REPO>|${{ env.DOCKER_REPO }}|g" k8s/backend-deployment.yaml
-      sed -i "s|<DOCKER_REPO>|${{ env.DOCKER_REPO }}|g" k8s/frontend-deployment.yaml
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
 
-  - name: Deploy to Kubernetes
-    run: |
-      kubectl apply -f k8s/backend-deployment.yaml
-      kubectl apply -f k8s/backend-service.yaml
-      kubectl apply -f k8s/frontend-deployment.yaml
-      kubectl apply -f k8s/frontend-service.yaml
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
 
-  - name: Wait for rollout
-    run: |
-      kubectl rollout status deployment/backend --timeout=120s
-      kubectl rollout status deployment/frontend --timeout=120s
+      - name: Replace image tag in manifests
+        run: |
+          sed -i "s|<DOCKER_REPO>|${{ secrets.DOCKER_REPO }}|g" k8s/backend-deployment.yaml
+          sed -i "s|<DOCKER_REPO>|${{ secrets.DOCKER_REPO }}|g" k8s/frontend-deployment.yaml
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/backend-deployment.yaml
+          kubectl apply -f k8s/backend-service.yaml
+          kubectl apply -f k8s/frontend-deployment.yaml
+          kubectl apply -f k8s/frontend-service.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/backend --timeout=120s
+          kubectl rollout status deployment/frontend --timeout=120s
+
