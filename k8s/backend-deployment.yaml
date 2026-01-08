@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: <DOCKER_REPO>/backend:${GITHUB_SHA}
+          ports:
+            - containerPort: 5050
+          env:
+            - name: MONGO_URI
+              value: "mongodb+srv://shashuladdu5_db_user:Masul@cluster0.eiwqro6.mongodb.net/?appName=Cluster0"
