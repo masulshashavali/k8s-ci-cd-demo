@@ -54,8 +54,9 @@ jobs:
       # Step 8: Replace repo name in manifests
       - name: Replace image repo in manifests
         run: |
-          sed -i "s|<DOCKER_REPO>|${{ secrets.DOCKER_REPO }}|g" k8s/backend-deployment.yaml
-          sed -i "s|<DOCKER_REPO>|${{ secrets.DOCKER_REPO }}|g" k8s/frontend-deployment.yaml
+          sed -i "s|your-backend-image:latest|${{ secrets.DOCKER_REPO }}:backend-${{ github.sha }}|g" k8s/backend-deployment.yaml
+          sed -i "s|your-frontend-image:latest|${{ secrets.DOCKER_REPO }}:frontend-${{ github.sha }}|g" k8s/frontend-deployment.yaml
+
 
       # Step 9: Deploy to Kubernetes
       - name: Deploy to Kubernetes
@@ -70,3 +71,4 @@ jobs:
         run: |
           kubectl rollout status deployment/backend --timeout=300s
           kubectl rollout status deployment/frontend --timeout=300s
+          
