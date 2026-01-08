@@ -26,16 +26,18 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # Step 4: Build & Push Backend
-      - name: Build & Push Backend
+      - name: Build & Push Backend        
         run: |
-          docker build -t ${{ secrets.DOCKER_REPO }}/backend:${{ github.sha }} ./backend
-          docker push ${{ secrets.DOCKER_REPO }}/backend:${{ github.sha }}
+          docker build -t ${{ secrets.DOCKER_REPO }}:backend-${{ github.sha }} ./backend
+          docker push ${{ secrets.DOCKER_REPO }}:backend-${{ github.sha }}
+
+
 
       # Step 5: Build & Push Frontend
       - name: Build & Push Frontend
         run: |
-          docker build -t ${{ secrets.DOCKER_REPO }}/frontend:${{ github.sha }} ./frontend
-          docker push ${{ secrets.DOCKER_REPO }}/frontend:${{ github.sha }}
+          docker build -t ${{ secrets.DOCKER_REPO }}:frontend-${{ github.sha }} ./frontend
+          docker push ${{ secrets.DOCKER_REPO }}:frontend-${{ github.sha }}
 
       # Step 6: Set up kubectl
       - name: Set up kubectl
