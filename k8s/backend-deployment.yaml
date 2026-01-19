@@ -22,4 +22,3 @@ spec:
           env:
             - name: MONGO_URI
               value: "mongodb+srv://shashuladdu5_db_user:Masul@cluster0.eiwqro6.mongodb.net/?appName=Cluster0"
-              # using ENV
